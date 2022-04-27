@@ -1,3 +1,8 @@
+'''A script for model training for a problem of outlet matchung.
+
+usage: run with a command line arguments for corfiguration
+of parameters.
+'''
 import pathlib
 
 import pandas as pd
@@ -33,7 +38,7 @@ def main():
     add_pairwise_features(train_pairs, inplace=True)
 
     # select (kfold cross-validation) and train model
-    best_model = run_kfold(
+    best_model, threshold = run_kfold(
         train_pairs,
         fixed_precision=FIXED_PRECISION,
         random_seed=RANDOM_SEED,
@@ -50,6 +55,7 @@ def main():
     )
 
     print(pair_metrics(test_pairs.target, test_pred, FIXED_PRECISION))
+    print(f'train threshold = {threshold}')
 
 
 if __name__ == "__main__":

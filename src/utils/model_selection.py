@@ -1,4 +1,4 @@
-from typing import Any, Optional, TypedDict
+from typing import Any, Tuple, TypedDict
 
 import numpy as np
 import pandas as pd
@@ -33,6 +33,9 @@ CLASSIFIER_PARAMS = {
 
 
 class ClassifierParams(TypedDict):
+    '''
+    Datatype of classifier parameters.
+    '''
     param: str
     value: Any
 
@@ -42,8 +45,15 @@ def generate_grid(
     shape: int = 5
 ):
     '''
-    generates grid of params of length "shape"
-    shape >= 1
+    Generates grid of classifier parameters of length "shape"
+
+    Parameters:
+        params : ClassifierParams
+            Parameters to choose from.
+        shape : int, default 5
+            Number of distinct params to generate. Not Less than 1.
+    Returns:
+        dict_of_params : Dict[int, ClassifierParams]
     '''
     dict_of_params = {}
     i = 0
@@ -54,6 +64,19 @@ def generate_grid(
         if param not in dict_of_params.values():
             dict_of_params[i] = param
             i += 1
+    # add default parameters
+    dict_of_params[-1] = {
+        'colsample_bylevel': 1,
+        'colsample_bynode': 1,
+        'colsample_bytree': 1,
+        'gamma': 0,
+        'learning_rate': 0.1,
+        'max_depth': 3,
+        'n_estimators': 100,
+        'reg_alpha': 0,
+        'reg_lambda': 1,
+        'scale_pos_weight': 1,
+    }
     return dict_of_params
 
 
@@ -63,8 +86,22 @@ def pair_metrics(
     fixed_precision
 ):
     '''
-    returns precision-recall AUC,
-    recall@precision=fixed_precision and threshold
+    Calculates
+        - precision-recall AUC
+        - recall@precision=fixed_precision
+        - threshold (for given precision)
+
+    Parameters:
+        y_true : arrayLike
+            True values.
+        pred_proba : arrayLike
+            Predicted probabilities of two classes.
+        fixed_precision : float
+            Value of precision at which to calculate recall.
+    Returns:
+        precision-recall AUC : float
+        recall at fixed precision : float
+        threshold : float
     '''
     precision, recall, thresholds = precision_recall_curve(
         y_true, pred_proba[:, 1])
@@ -81,21 +118,27 @@ def pair_metrics(
 
 def run_kfold(
     data: DataFrame,
-    fixed_precision: Optional[float] = FIXED_PRECISION,
-    random_seed: Optional[int] = RANDOM_SEED,
-    grid_size: Optional[int] = GRID_SIZE
-) -> xgb.XGBClassifier:
+    fixed_precision: float = FIXED_PRECISION,
+    random_seed: int = RANDOM_SEED,
+    grid_size: int = GRID_SIZE
+) -> Tuple[xgb.XGBClassifier, float]:
     '''
-    runs kfold cross validation to select
-    best parameters of a model.
-    selection on recall@fixed_precision
+    Runs kfold cross validation to select best parameters of a model.
+    Selection based on recall@fixed_precision.
 
-    arguments:
-        data - pairwise dataset with FEATURES
-        and target
-        fixed_precision - level of precision at wich
-        recall of a model is evaluated
-        random_seed - random seed
+    Parameters:
+        data : DataFrame
+            Pairs dataset with FEATURES and target.
+        fixed_precision : float, default FIXED_PRECISION
+            Level of precision at which recall of a model is calculated
+            for model selection.
+        random_seed : int, default RANDOM_SEED
+            Seed for random number generator.
+    Returns:
+        xgb.XGBClassifier
+            Classifier with best parameters fitted on whole dataset.
+        float
+            Average theshold for classifier to get fixed precision.
     '''
     kf_results = pd.DataFrame()
 
@@ -158,6 +201,10 @@ def run_kfold(
         .sort_values(ascending=False)
         .index[0]
     )
+    avg_threshold = kf_results[
+        kf_results.param_index == best_model
+    ].threshold.mean()
+
     best_param = kf_results[
         kf_results.param_index == best_model
     ].param.values[0]
@@ -172,4 +219,4 @@ def run_kfold(
     clf.fit(X_train, y_train)
     # clf.dump()
 
-    return clf
+    return clf, avg_threshold

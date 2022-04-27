@@ -6,9 +6,8 @@ from pandas.core.frame import DataFrame
 
 def longest_common_substring_norm(text1: str, text2: str) -> float:
     '''
-    returns longest common substring of two strings
-    devided on their average length
-    (should be in cython)
+    Returns longest common substring of two strings devided
+    by their average length.
     '''
     if not text1:
         text1 = ''
@@ -32,9 +31,8 @@ def longest_common_substring_norm(text1: str, text2: str) -> float:
 
 def levenshtein_distance_norm(text1: str, text2: str) -> float:
     '''
-    returns levenstein distance of two strings
-    devided on their average length + 1 (to avoid devision
-    by zero)
+    Returns levenstein distance of two strings devided
+    by their average length + 1 (to avoid devision by zero)
     '''
     if not text1:
         text1 = ''
@@ -46,10 +44,10 @@ def levenshtein_distance_norm(text1: str, text2: str) -> float:
 
 def add_pairwise_features(
     data: DataFrame,
-    inplace: Optional[bool] = True
-) -> DataFrame:
+    inplace: bool = True
+) -> Optional[DataFrame]:
     '''
-    adds pairwise features to data
+    Adds pairwise features to data.
 
     - phone_distance: normalized Levenshtein distance
     of phone numbers
@@ -57,6 +55,14 @@ def add_pairwise_features(
     of names
     - name_lcs_norm: normalized Longest Common Substring
     of names
+
+    Parameters:
+        data : DataFrame
+            Pairs dataset with initial features.
+        inplace : bool, default False
+            Modify the DataFrame in place (do not create a new object).
+    Returns:
+        DataFrame or None
     '''
     if not inplace:
         data = data.copy()

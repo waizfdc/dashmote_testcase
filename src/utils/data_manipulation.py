@@ -23,9 +23,23 @@ EARTH_RADIUS = 6378100
 
 def add_index_column(
     data: DataFrame,
-    record_column: Optional[str] = RECORD_COLUMN,
-    inplace: Optional[bool] = True
+    record_column: str = RECORD_COLUMN,
+    inplace: bool = True
 ) -> Optional[DataFrame]:
+    '''
+    Adds a new index-like column to a dataframe.
+
+    Parameters:
+        data : DataFrame
+            A dataframe in which a new column should be created.
+        record_column : str, default True
+            A name for a new column.
+        inplace : bool, default False
+            Modify the DataFrame in place (do not create a new object).
+
+    Returns:
+        DataFrame or None.
+    '''
     if not inplace:
         data = data.copy()
     data[record_column] = range(len(data))
@@ -36,18 +50,37 @@ def add_index_column(
 
 def test_split(
     data: DataFrame,
-    random_seed: Optional[int] = RANDOM_SEED,
-    test_size_poi: Optional[float] = TEST_SIZE_POI,
-    test_size_record: Optional[float] = TEST_SIZE_RECORD,
-    record_column: Optional[str] = RECORD_COLUMN,
-    poi_column: Optional[str] = POI_COLUMN,
-    strat_column: Optional[str] = STRAT_COLUMN,
+    random_seed: int = RANDOM_SEED,
+    test_size_poi: float = TEST_SIZE_POI,
+    test_size_record: float = TEST_SIZE_RECORD,
+    record_column: str = RECORD_COLUMN,
+    poi_column: str = POI_COLUMN,
+    strat_column: str = STRAT_COLUMN,
 ) -> Tuple[DataFrame, DataFrame]:
     '''
-    splits data in two datasets.
-    test contains of POI data and record data.
+    Splits data in two datasets.
+
+    Test contains of POI data and record data.
     POI data contains POI ids exclusive for test dataset.
     record data contains POI ids which may be in train dataset.
+
+    Parameters:
+        data : DataFrame
+            A dataframe to split.
+        random_seed : int, default RANDOM_SEED
+            Seed for random number generator.
+        test_size_poi : float, default TEST_SIZE_POI
+            Fraction of POI ids to form a test set.
+        test_size_record : float, default TEST_SIZE_RECORD
+            Fraction of records to form a test set where POI may be in train.
+        record_column : str, default RECORD_COLUMN
+            Column name for record id.
+        strat_column : str, default STRAT_COLUMN
+            Column name for stratification.
+
+    Returns:
+        DataFrame, DataFrame
+            Returns train and test datasets.
     '''
     if record_column not in data.columns:
         add_index_column(
@@ -100,16 +133,28 @@ def generate_pairs(
     n_neighbours: int = NUM_NEIGHBOURS
 ) -> DataFrame:
     '''
-    generates a dataset of pairs of records with target.
-    calculates location distance between pairs.
+    Generates a dataset of pairs of records with target.
 
-    if test dataframe is provided, pairs are generated for
-    test records from [data + test] dataset
+    For each record generates `n_neighbours` pairs from nearest neighbours
+    from the same cluster.
+    Also calculates location distance between pairs and target variable.
+    If test dataframe is provided, pairs are generated for
+    test records from [data + test] dataset.
 
-    filters:
-        - pairs are from the same persistent_cluster
-        - for every record n_neighbours pairs are generated
-        based on their location
+    Parameters:
+        data : DataFrame
+            Dataset from which pairs are generated.
+        test : DataFrame | None
+            Dataset of test records for which pairs should be generated.
+        cluster_col : str, default STRAT_COLUMN
+            Name of the cluster column.
+        n_neighbours : int, default NUM_NEIGHBOURS
+            Number of Neighbours to generate pairs.
+
+    Returns:
+        DataFrame
+            Returns dataset with features of both records, target
+            and distance columns.
     '''
     data = data.copy()
     columns = data.columns

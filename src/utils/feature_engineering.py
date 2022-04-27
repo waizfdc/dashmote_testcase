@@ -29,6 +29,21 @@ FINAL_COLUMNS = [
 
 
 def stand_phone(s: str) -> str:
+    '''
+    Convers string with US phone number to standart form.
+
+    Standart form means:
+        - contains only numeric characters
+        - starts with '1'
+        - length is 11 characters
+    If given None returns empty string.
+
+    Parameters:
+        s : str | None
+            Phone number string.
+    Returns:
+        str
+    '''
     if not s:
         return ''
     stand_phone = re.sub(r'[^0-9]', '', s)
@@ -38,12 +53,14 @@ def stand_phone(s: str) -> str:
 
 
 def remove_text_in_parentheses(text: str) -> str:
+    '''Removes text in parenthesis including brackets etc.'''
     if not text:
         return ''
     return re.sub(r'[\(\[].*?[\)\]]', '', text)
 
 
 def remove_non_alphanum(text: str) -> str:
+    '''Changes all non Latin or numeric characters to whitespaces.'''
     if not text:
         return ''
     # return regex.sub('[^\p{Latin}\p{posix_punct}\d\s]', ' ', text)
@@ -51,24 +68,28 @@ def remove_non_alphanum(text: str) -> str:
 
 
 def remove_double_spaces(text: str) -> str:
+    '''Reduces sequential spaces to 1 space.'''
     if not text:
         return
     return re.sub(' +', ' ', text)
 
 
 def strip(text: str) -> str:
+    '''String strip() wrapper.'''
     if not text:
         return ''
     return text.strip()
 
 
 def lower(text: str) -> str:
+    '''String lower() wrapper.'''
     if not text:
         return ''
     return text.lower()
 
 
 def function_chaining(start, *funcs):
+    '''Helper function to organize function chaining.'''
     res = start
     for func in funcs:
         res = func(res)
@@ -76,6 +97,18 @@ def function_chaining(start, *funcs):
 
 
 def stand_name(text: str) -> str:
+    '''
+    Converts name of outlet to one format.
+
+    Removes text in brackets, non LAtin or numeric
+    characters, double whitespaces. Returns in lowercase.
+
+    Parameters:
+        text : str
+            Name of an outlet
+    Returns:
+        str
+    '''
     return function_chaining(text,
                              lower,
                              remove_text_in_parentheses,
@@ -87,8 +120,24 @@ def stand_name(text: str) -> str:
 
 def feature_preprocessing(
     data: DataFrame,
-    inplace: Optional[bool] = True
+    inplace: bool = True
 ) -> Optional[DataFrame]:
+    '''
+    Adds new columns with parsed features.
+
+    stand_name - standardized name of an outlet.
+    stand_phone - standardized phone number of an outlet.
+    lat_rad - latitude in radians.
+    lon_rad - longitude in radians.
+
+    Parameters:
+        data : DataFrame
+            Dataset with initial features.
+        inplace : bool, default False
+            Modify the DataFrame in place (do not create a new object).
+    Returns:
+        DataFrame or None
+    '''
     # check if data has needed columns
     dif_cols = (set(INPUT_COLUMNS) - set(data.columns))
     if len(dif_cols) != 0:
