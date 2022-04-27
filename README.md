@@ -1,2 +1,2 @@
 # dashmote_testcase
-code for Dashmote testcese for Data Scientist
+code for Dashmote testcase for Data Scientist
