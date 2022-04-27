@@ -16,7 +16,7 @@ FIXED_PRECISION = .95
 LOG_PATH = './logs'
 
 # Data config
-DATA_DIR = '.data/raw'
+DATA_DIR = 'data/raw'
 DATA_FILENAME = 'cs1_us_outlets.parquet.gzip'
 DATA_PATH = pathlib.Path(f'{DATA_DIR}/{DATA_FILENAME}')
 
@@ -45,9 +45,11 @@ def main():
     test_pairs = generate_pairs(train, test)
     add_pairwise_features(test_pairs, inplace=True)
 
-    test_pred = best_model.predict_proba(test_pairs)
+    test_pred = best_model.predict_proba(
+        test_pairs[best_model._Booster.feature_names]
+    )
 
-    print(pair_metrics(test_pairs.target, test_pred))
+    print(pair_metrics(test_pairs.target, test_pred, FIXED_PRECISION))
 
 
 if __name__ == "__main__":

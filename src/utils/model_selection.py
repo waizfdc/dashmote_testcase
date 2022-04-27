@@ -50,7 +50,7 @@ def generate_grid(
     while len(dict_of_params) < shape - 1:
         param = {}
         for p in params:
-            param[p] = np.random.choice(params[i])
+            param[p] = np.random.choice(params[p])
         if param not in dict_of_params.values():
             dict_of_params[i] = param
             i += 1
@@ -99,22 +99,26 @@ def run_kfold(
     '''
     kf_results = pd.DataFrame()
 
-    grid_of_params = generate_grid(grid_size)
+    grid_of_params = generate_grid(CLASSIFIER_PARAMS, grid_size)
 
     kf = StratifiedKFold(
         n_splits=5,
         random_state=random_seed,
+        shuffle=True,
     )
     for train_index, test_index in kf.split(
         data[FEATURES],
         data.target,
     ):
-        X_train = data[train_index][FEATURES]
-        X_test = data[test_index][FEATURES]
-        y_train = data[train_index].target
-        y_test = data[test_index].target
+        X_train = data[data.index.isin(train_index)][FEATURES]
+        X_test = data[data.index.isin(test_index)][FEATURES]
+        y_train = data[data.index.isin(train_index)].target
+        y_test = data[data.index.isin(test_index)].target
 
-        for param in grid_of_params:
+        for i, _ in sorted(grid_of_params.items(), key=lambda x: x[0]):
+            param_index = str(i)
+            param = grid_of_params[i]
+
             clf = xgb.XGBClassifier(
                 seed=random_seed,
                 n_jobs=-1,
@@ -133,26 +137,30 @@ def run_kfold(
                     X_test), fixed_precision)
 
             kf_results = kf_results.append(
-                [
-                    param, threshold,
+                [[
+                    param_index, param, threshold,
                     train_pr_rec_auc, train_rec_at_fixed_pr,
                     test_pr_rec_auc, test_rec_at_fixed_pr,
-                ]
+                ]]
             )
     kf_results.columns = [
-        'param',
+        'param_index', 'param', 'threshold',
         'train_pr_rec_auc', 'train_rec_at_fixed_pr',
         'test_pr_rec_auc', 'test_rec_at_fixed_pr',
     ]
+    kf_results.to_csv('kf_results.csv')
     # select param with best average test_rec_at_fixed_pr
-    best_param = (
+    best_model = (
         kf_results
-        .groupby('param')
+        .groupby('param_index')
         .test_rec_at_fixed_pr
         .mean()
         .sort_values(ascending=False)
         .index[0]
     )
+    best_param = kf_results[
+        kf_results.param_index == best_model
+    ].param.values[0]
     X_train = data[FEATURES]
     y_train = data.target
 
@@ -162,6 +170,6 @@ def run_kfold(
         **best_param,
     )
     clf.fit(X_train, y_train)
-    clf.dump()
+    # clf.dump()
 
     return clf
