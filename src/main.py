@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''A script for model training for a problem of outlet matchung.
 
 usage: run with a command line arguments for configuration
@@ -17,28 +18,22 @@ from utils.pairwise_features import add_pairwise_features
 
 APP_NAME = 'DASHMODE_TestCase'
 
-# Parameters
-RANDOM_SEED = 42
-NUM_NEIGHBOURS = 10
-FIXED_PRECISION = .95
-
-# Log config
-LOG_PATH = './logs/testacase.log'
-
-# Data config
-DATA_DIR = 'data/raw'
-DATA_FILENAME = 'cs1_us_outlets.parquet.gzip'
-DATA_PATH = pathlib.Path(f'{DATA_DIR}/{DATA_FILENAME}')
+# config
+CONFIG_PATH = './config.yaml'
 
 logger = logging.getLogger(APP_NAME)
 
 
 def main():
-    setup_logging()
+    config = yaml.safe_load(open(CONFIG_PATH, 'r'))
+    setup_logging(pathlib.Path(config['log_path']))
+    logger.debug('configuration: %s', repr(config))
+
     # creating train and test data
-    data = pd.read_parquet(DATA_PATH)
+    data = pd.read_parquet(pathlib.Path(config['data_path']))
     logger.info('Data loaded. shape is %s', data.shape)
-    train, test = test_split(data, random_seed=RANDOM_SEED)
+
+    train, test = test_split(data, random_seed=config['random_seed'])
     logger.info(
         'Data splited. train shape is %s, test shape is %s',
         train.shape,
@@ -56,6 +51,7 @@ def main():
     logger.debug('Generated train pairs dataset with shape '
                  + '%s', train_pairs.shape
                  )
+
     add_pairwise_features(train_pairs, inplace=True)
     logger.debug('Added pairwise features. '
                  + 'train_pairs shape is %s',
@@ -66,13 +62,15 @@ def main():
     logger.info('Cross Validation Started.')
     best_model, threshold = run_kfold(
         train_pairs,
-        fixed_precision=FIXED_PRECISION,
-        random_seed=RANDOM_SEED,
+        pathlib.Path(config['model_path']),
+        pathlib.Path(config['cv_log_path']),
+        fixed_precision=config['fixed_precision'],
+        random_seed=config['random_seed'],
     )
     logger.info('Best model selected')
     logger.info('Average threshold on train for '
                 + 'precision=%s is %s',
-                FIXED_PRECISION,
+                config['fixed_precision'],
                 threshold
                 )
 
@@ -89,6 +87,7 @@ def main():
                  + '%s', test_pairs.shape
                  )
     logger.debug('Test pairs columns: %s', ' '.join(test_pairs.columns))
+
     add_pairwise_features(test_pairs, inplace=True)
     logger.debug('Added pairwise features. '
                  + 'test_pairs shape is %s',
@@ -102,14 +101,18 @@ def main():
     logger.debug('Predicted scores for test pairs.')
 
     test_auc, test_recall, test_threshold = (
-        pair_metrics(test_pairs.target, test_pairs.score, FIXED_PRECISION)
+        pair_metrics(
+            test_pairs.target,
+            test_pairs.score,
+            config['fixed_precision']
+        )
     )
-    print('Metrics on test pairs are: '
-          + 'precision-recall AUC = %s, '
-          + 'recall at fixed precision = %s, '
-          + 'threshold at fixed precision on test = %s',
-          test_auc, test_recall, test_threshold
-          )
+    logger.info('Metrics on test pairs are: '
+                + 'precision-recall AUC = %s, '
+                + 'recall at fixed precision = %s, '
+                + 'threshold at fixed precision on test = %s',
+                test_auc, test_recall, test_threshold
+                )
 
     test_precision, test_recall, test_f1 = (
         metrics_at_threshold(test_pairs.target, test_pairs.score, threshold)
@@ -138,38 +141,35 @@ def main():
                 )
 
 
-def setup_logging(logging_yaml_config_fpath=None):
+def setup_logging(log_path: pathlib.Path):
     """Setup logging via YAML if it is provided"""
-    if logging_yaml_config_fpath:
-        with open(logging_yaml_config_fpath) as config_fin:
-            logging.config.dictConfig(yaml.safe_load(config_fin))
-    else:
-        file_formatter = logging.Formatter(
-            fmt='%(asctime)s\t%(levelname)s'
-            + '\t%(name)s\t%(module)s\t%(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S',
-        )
-        file_handler = logging.FileHandler(
-            filename=LOG_PATH,
-        )
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(file_formatter)
 
-        stream_formatter = logging.Formatter(
-            fmt='%(message)s',
-        )
-        stream_handler = logging.StreamHandler(
-            stream=sys.stderr,
-        )
-        stream_handler.setLevel(logging.INFO)
-        stream_handler.setFormatter(stream_formatter)
+    file_formatter = logging.Formatter(
+        fmt='%(asctime)s\t%(levelname)s'
+        + '\t%(name)s\t%(module)s\t%(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    )
+    file_handler = logging.FileHandler(
+        filename=log_path,
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(file_formatter)
 
-        logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG)
-        logger.addHandler(file_handler)
-        logger.addHandler(stream_handler)
+    stream_formatter = logging.Formatter(
+        fmt='%(message)s',
+    )
+    stream_handler = logging.StreamHandler(
+        stream=sys.stderr,
+    )
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(stream_formatter)
 
-        logging.getLogger('numexpr.utils').setLevel(logging.WARNING)
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+    logging.getLogger('numexpr.utils').setLevel(logging.WARNING)
 
 
 if __name__ == "__main__":

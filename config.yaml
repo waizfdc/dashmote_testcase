@@ -1,0 +1,7 @@
+data_path: ./data/raw/cs1_us_outlets.parquet.gzip
+log_path: ./logs/testacase.log
+cv_log_path: ./logs/cv.log
+model_path: ./models/xgb_classifier.pkl
+random_seed: 42
+num_neighbours: 10
+fixed_precision: .95

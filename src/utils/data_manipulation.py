@@ -6,6 +6,7 @@ from pandas.core.frame import DataFrame
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsRegressor
 
+# default parameters
 RANDOM_SEED = 42
 TEST_SIZE_POI = .15
 TEST_SIZE_RECORD = .2

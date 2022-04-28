@@ -1,4 +1,6 @@
 import logging
+import pickle
+from pathlib import Path
 from typing import Any, Tuple, TypedDict
 
 import numpy as np
@@ -8,7 +10,6 @@ from pandas.core.frame import DataFrame
 from sklearn.metrics import (auc, f1_score, precision_recall_curve,
                              precision_score, recall_score)
 from sklearn.model_selection import StratifiedKFold
-
 
 CV_RESULTS_FILE = 'kf_results.csv'
 RANDOM_SEED = 42
@@ -161,6 +162,8 @@ def metrics_at_threshold(
 
 def run_kfold(
     data: DataFrame,
+    model_path: Path,
+    cv_log: Path,
     fixed_precision: float = FIXED_PRECISION,
     random_seed: int = RANDOM_SEED,
     grid_size: int = GRID_SIZE
@@ -172,6 +175,10 @@ def run_kfold(
     Parameters:
         data : DataFrame
             Pairs dataset with FEATURES and target.
+        model_path : Path
+            Path to save final model (in existing directory!).
+        cv_log : Path
+            Path to save CV logs.
         fixed_precision : float, default FIXED_PRECISION
             Level of precision at which recall of a model is calculated
             for model selection.
@@ -194,6 +201,7 @@ def run_kfold(
         shuffle=True,
     )
 
+    # TODO: move fit logic to a separate function
     num_fold: int = 0
     for train_index, test_index in kf.split(
         data[FEATURES],
@@ -241,8 +249,8 @@ def run_kfold(
         'train_pr_rec_auc', 'train_rec_at_fixed_pr',
         'test_pr_rec_auc', 'test_rec_at_fixed_pr',
     ]
-    kf_results.to_csv(CV_RESULTS_FILE)
-    logger.debug('CV results written to %s', CV_RESULTS_FILE)
+    kf_results.to_csv(cv_log)
+    logger.debug('CV results written to %s', cv_log)
     # select param with best average test_rec_at_fixed_pr
     best_model = (
         kf_results
@@ -268,6 +276,9 @@ def run_kfold(
         **best_param,
     )
     clf.fit(X_train, y_train)
-    # clf.dump()
+
+    # clf.save_model(model_path)
+    with open(model_path, 'wb') as f_path:
+        pickle.dump(clf, f_path)
 
     return clf, avg_threshold

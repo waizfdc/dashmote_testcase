@@ -1,0 +1,52 @@
+2022-04-28 18:43:06	DEBUG	DASHMODE_TestCase	main	configuration: {'data_path': './data/raw/cs1_us_outlets.parquet.gzip', 'log_path': './logs/testacase.log', 'cv_log_path': './logs/cv.log', 'model_path': './models/xgb_classifier.json', 'random_seed': 42, 'num_neighbours': 10, 'fixed_precision': 0.95}
+2022-04-28 18:43:06	INFO	DASHMODE_TestCase	main	Data loaded. shape is (3575, 8)
+2022-04-28 18:43:06	INFO	DASHMODE_TestCase	main	Data splited. train shape is (2442, 9), test shape is (1133, 10)
+2022-04-28 18:43:06	DEBUG	DASHMODE_TestCase	main	Test columns: name address lat lon telephone persistent_cluster label id_dashmote id_record test_type
+2022-04-28 18:43:06	DEBUG	DASHMODE_TestCase	main	Train feature preprocessing finished. Train shape is (2442, 7)
+2022-04-28 18:43:29	DEBUG	DASHMODE_TestCase	main	Generated train pairs dataset with shape (24071, 16)
+2022-04-28 18:43:34	DEBUG	DASHMODE_TestCase	main	Added pairwise features. train_pairs shape is (24071, 19)
+2022-04-28 18:43:34	INFO	DASHMODE_TestCase	main	Cross Validation Started.
+2022-04-28 18:43:34	DEBUG	utils.model_selection	model_selection	5 parameters for CV
+2022-04-28 18:43:34	DEBUG	utils.model_selection	model_selection	Running fold #1
+2022-04-28 18:43:34	DEBUG	utils.model_selection	model_selection	Checking parameters #-1
+2022-04-28 18:43:35	DEBUG	utils.model_selection	model_selection	Checking parameters #0
+2022-04-28 18:43:36	DEBUG	utils.model_selection	model_selection	Checking parameters #1
+2022-04-28 18:43:37	DEBUG	utils.model_selection	model_selection	Checking parameters #2
+2022-04-28 18:43:37	DEBUG	utils.model_selection	model_selection	Checking parameters #3
+2022-04-28 18:43:38	DEBUG	utils.model_selection	model_selection	Running fold #2
+2022-04-28 18:43:38	DEBUG	utils.model_selection	model_selection	Checking parameters #-1
+2022-04-28 18:43:39	DEBUG	utils.model_selection	model_selection	Checking parameters #0
+2022-04-28 18:43:41	DEBUG	utils.model_selection	model_selection	Checking parameters #1
+2022-04-28 18:43:41	DEBUG	utils.model_selection	model_selection	Checking parameters #2
+2022-04-28 18:43:42	DEBUG	utils.model_selection	model_selection	Checking parameters #3
+2022-04-28 18:43:43	DEBUG	utils.model_selection	model_selection	Running fold #3
+2022-04-28 18:43:43	DEBUG	utils.model_selection	model_selection	Checking parameters #-1
+2022-04-28 18:43:44	DEBUG	utils.model_selection	model_selection	Checking parameters #0
+2022-04-28 18:43:46	DEBUG	utils.model_selection	model_selection	Checking parameters #1
+2022-04-28 18:43:46	DEBUG	utils.model_selection	model_selection	Checking parameters #2
+2022-04-28 18:43:47	DEBUG	utils.model_selection	model_selection	Checking parameters #3
+2022-04-28 18:43:48	DEBUG	utils.model_selection	model_selection	Running fold #4
+2022-04-28 18:43:48	DEBUG	utils.model_selection	model_selection	Checking parameters #-1
+2022-04-28 18:43:49	DEBUG	utils.model_selection	model_selection	Checking parameters #0
+2022-04-28 18:43:51	DEBUG	utils.model_selection	model_selection	Checking parameters #1
+2022-04-28 18:43:51	DEBUG	utils.model_selection	model_selection	Checking parameters #2
+2022-04-28 18:43:52	DEBUG	utils.model_selection	model_selection	Checking parameters #3
+2022-04-28 18:43:53	DEBUG	utils.model_selection	model_selection	Running fold #5
+2022-04-28 18:43:53	DEBUG	utils.model_selection	model_selection	Checking parameters #-1
+2022-04-28 18:43:54	DEBUG	utils.model_selection	model_selection	Checking parameters #0
+2022-04-28 18:43:56	DEBUG	utils.model_selection	model_selection	Checking parameters #1
+2022-04-28 18:43:56	DEBUG	utils.model_selection	model_selection	Checking parameters #2
+2022-04-28 18:43:57	DEBUG	utils.model_selection	model_selection	Checking parameters #3
+2022-04-28 18:43:58	DEBUG	utils.model_selection	model_selection	CV results written to logs/cv.log
+2022-04-28 18:44:00	INFO	DASHMODE_TestCase	main	Best model selected
+2022-04-28 18:44:00	INFO	DASHMODE_TestCase	main	Average threshold on train for precision=0.95 is 0.44142526388168335
+2022-04-28 18:44:00	DEBUG	DASHMODE_TestCase	main	Test feature preprocessing finished. Test shape is (1133, 14)
+2022-04-28 18:44:00	DEBUG	DASHMODE_TestCase	main	Test columns: name address lat lon telephone persistent_cluster label id_dashmote id_record test_type stand_name stand_phone lat_rad lon_rad
+2022-04-28 18:44:35	DEBUG	DASHMODE_TestCase	main	Generated test pairs dataset with shape (11161, 17)
+2022-04-28 18:44:35	DEBUG	DASHMODE_TestCase	main	Test pairs columns: test_type_x persistent_cluster_x id_dashmote_x id_record_x stand_name_x stand_phone_x lat_rad_x lon_rad_x persistent_cluster_y id_dashmote_y id_record_y stand_name_y stand_phone_y lat_rad_y lon_rad_y target location_distance
+2022-04-28 18:44:37	DEBUG	DASHMODE_TestCase	main	Added pairwise features. test_pairs shape is (11161, 20)
+2022-04-28 18:44:37	DEBUG	DASHMODE_TestCase	main	Test pairs columns: test_type_x persistent_cluster_x id_dashmote_x id_record_x stand_name_x stand_phone_x lat_rad_x lon_rad_x persistent_cluster_y id_dashmote_y id_record_y stand_name_y stand_phone_y lat_rad_y lon_rad_y target location_distance phone_distance name_levenshtein_norm name_lcs_norm
+2022-04-28 18:44:37	DEBUG	DASHMODE_TestCase	main	Predicted scores for test pairs.
+2022-04-28 18:44:37	INFO	DASHMODE_TestCase	main	Metrics on test pairs are: precision-recall AUC = 0.9617839385127659, recall at fixed precision = 0.9303691275167785, threshold at fixed precision on test = 0.88582814
+2022-04-28 18:44:37	INFO	DASHMODE_TestCase	main	Metrics on mixed test pairs with train threshold: precision = 0.8997632202052092, recall = 0.9563758389261745, f1_score = 0.9272061813745425
+2022-04-28 18:44:37	INFO	DASHMODE_TestCase	main	Metrics on new POI test pairs with train threshold: precision = 0.8610634648370498, recall = 0.9400749063670412, f1_score = 0.8988361683079678
