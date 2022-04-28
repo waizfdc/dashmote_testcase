@@ -1,12 +1,16 @@
+import logging
 from typing import Any, Tuple, TypedDict
 
 import numpy as np
 import pandas as pd
 import xgboost as xgb
 from pandas.core.frame import DataFrame
-from sklearn.metrics import auc, precision_recall_curve
+from sklearn.metrics import (auc, f1_score, precision_recall_curve,
+                             precision_score, recall_score)
 from sklearn.model_selection import StratifiedKFold
 
+
+CV_RESULTS_FILE = 'kf_results.csv'
 RANDOM_SEED = 42
 NUM_NEIGHBOURS = 10
 FIXED_PRECISION = .95
@@ -30,6 +34,8 @@ CLASSIFIER_PARAMS = {
     'reg_lambda': [0, .1, .5, 1],
     'scale_pos_weight': [1, 10, 25, 50],
 }
+
+logger = logging.getLogger(__name__)
 
 
 class ClassifierParams(TypedDict):
@@ -65,6 +71,7 @@ def generate_grid(
             dict_of_params[i] = param
             i += 1
     # add default parameters
+    # TODO: make it const
     dict_of_params[-1] = {
         'colsample_bylevel': 1,
         'colsample_bynode': 1,
@@ -84,7 +91,7 @@ def pair_metrics(
     y_true,
     pred_proba,
     fixed_precision
-):
+) -> Tuple[float, float, float]:
     '''
     Calculates
         - precision-recall AUC
@@ -95,7 +102,7 @@ def pair_metrics(
         y_true : arrayLike
             True values.
         pred_proba : arrayLike
-            Predicted probabilities of two classes.
+            Predicted probabilities of class 1.
         fixed_precision : float
             Value of precision at which to calculate recall.
     Returns:
@@ -104,7 +111,7 @@ def pair_metrics(
         threshold : float
     '''
     precision, recall, thresholds = precision_recall_curve(
-        y_true, pred_proba[:, 1])
+        y_true, pred_proba)
     pr_rec_auc = auc(recall, precision)
     recall_at_pr = 0
     threshold = 0
@@ -114,6 +121,42 @@ def pair_metrics(
             threshold = thresholds[i]
             break
     return pr_rec_auc, recall_at_pr, threshold
+
+
+def metrics_at_threshold(
+        y_true,
+        pred_proba,
+        threshold) -> Tuple[float, float, float]:
+    '''
+
+    Calculates precision, recall and f1-Score at given threshold.
+
+    Parameters:
+        y_true : arrayLike
+            True values.
+        pred_proba : arrayLike
+            Predicted probabilities of class 1.
+        threshold : float
+            Threshold for class prediction.
+    Returns:
+        precision : float
+        recall : float
+        f1-score : float
+    '''
+    return (
+        precision_score(
+            y_true,
+            np.where(pred_proba > threshold, 1, 0)
+        ),
+        recall_score(
+            y_true,
+            np.where(pred_proba > threshold, 1, 0)
+        ),
+        f1_score(
+            y_true,
+            np.where(pred_proba > threshold, 1, 0)
+        )
+    )
 
 
 def run_kfold(
@@ -143,16 +186,22 @@ def run_kfold(
     kf_results = pd.DataFrame()
 
     grid_of_params = generate_grid(CLASSIFIER_PARAMS, grid_size)
+    logger.debug('%s parameters for CV', len(grid_of_params))
 
     kf = StratifiedKFold(
         n_splits=5,
         random_state=random_seed,
         shuffle=True,
     )
+
+    num_fold: int = 0
     for train_index, test_index in kf.split(
         data[FEATURES],
         data.target,
     ):
+        num_fold += 1
+        logger.debug('Running fold #%s', num_fold)
+
         X_train = data[data.index.isin(train_index)][FEATURES]
         X_test = data[data.index.isin(test_index)][FEATURES]
         y_train = data[data.index.isin(train_index)].target
@@ -161,6 +210,7 @@ def run_kfold(
         for i, _ in sorted(grid_of_params.items(), key=lambda x: x[0]):
             param_index = str(i)
             param = grid_of_params[i]
+            logger.debug('Checking parameters #%s', param_index)
 
             clf = xgb.XGBClassifier(
                 seed=random_seed,
@@ -172,12 +222,12 @@ def run_kfold(
             # test metrics
             test_pr_rec_auc, test_rec_at_fixed_pr, threshold = \
                 pair_metrics(y_test, clf.predict_proba(
-                    X_test), fixed_precision)
+                    X_test)[:, 1], fixed_precision)
 
             # train metrics
             train_pr_rec_auc, train_rec_at_fixed_pr, _ = \
                 pair_metrics(y_test, clf.predict_proba(
-                    X_test), fixed_precision)
+                    X_test)[:, 1], fixed_precision)
 
             kf_results = kf_results.append(
                 [[
@@ -191,7 +241,8 @@ def run_kfold(
         'train_pr_rec_auc', 'train_rec_at_fixed_pr',
         'test_pr_rec_auc', 'test_rec_at_fixed_pr',
     ]
-    kf_results.to_csv('kf_results.csv')
+    kf_results.to_csv(CV_RESULTS_FILE)
+    logger.debug('CV results written to %s', CV_RESULTS_FILE)
     # select param with best average test_rec_at_fixed_pr
     best_model = (
         kf_results

@@ -120,7 +120,8 @@ def stand_name(text: str) -> str:
 
 def feature_preprocessing(
     data: DataFrame,
-    inplace: bool = True
+    inplace: bool = False,
+    drop_old: bool = True,
 ) -> Optional[DataFrame]:
     '''
     Adds new columns with parsed features.
@@ -135,6 +136,7 @@ def feature_preprocessing(
             Dataset with initial features.
         inplace : bool, default False
             Modify the DataFrame in place (do not create a new object).
+        drop_old : bool, default True
     Returns:
         DataFrame or None
     '''
@@ -150,8 +152,9 @@ def feature_preprocessing(
     data['lon_rad'] = data.lon.apply(radians)
 
     drop_cols = [col for col in data.columns if col not in FINAL_COLUMNS]
-    data.drop(columns=drop_cols, inplace=True)
-    data = data[FINAL_COLUMNS]
+    if drop_old:
+        data.drop(columns=drop_cols, inplace=True)
+        data = data[FINAL_COLUMNS]
     if inplace:
         return
     return data

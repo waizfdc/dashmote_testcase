@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -24,7 +24,7 @@ EARTH_RADIUS = 6378100
 def add_index_column(
     data: DataFrame,
     record_column: str = RECORD_COLUMN,
-    inplace: bool = True
+    inplace: bool = False
 ) -> Optional[DataFrame]:
     '''
     Adds a new index-like column to a dataframe.
@@ -63,6 +63,7 @@ def test_split(
     Test contains of POI data and record data.
     POI data contains POI ids exclusive for test dataset.
     record data contains POI ids which may be in train dataset.
+    Test contains extra column 'test_type'.
 
     Parameters:
         data : DataFrame
@@ -130,7 +131,8 @@ def generate_pairs(
     data: DataFrame,
     test: Optional[DataFrame] = None,
     cluster_col: str = STRAT_COLUMN,
-    n_neighbours: int = NUM_NEIGHBOURS
+    n_neighbours: int = NUM_NEIGHBOURS,
+    keep_columns: Optional[List[str]] = None,
 ) -> DataFrame:
     '''
     Generates a dataset of pairs of records with target.
@@ -150,6 +152,8 @@ def generate_pairs(
             Name of the cluster column.
         n_neighbours : int, default NUM_NEIGHBOURS
             Number of Neighbours to generate pairs.
+        keep_columns: List[str] | None
+            List of columns to keep in pairs dataset from test.
 
     Returns:
         DataFrame
@@ -229,5 +233,7 @@ def generate_pairs(
         ret_columns = [col+'_x' for col in columns] \
             + [col+'_y' for col in columns] \
             + ['target', 'location_distance']
+        if keep_columns:
+            ret_columns = keep_columns + ret_columns
         pair_tdfs.append(pair_tdf[ret_columns])
     return pd.concat(pair_tdfs).reset_index(drop=True)

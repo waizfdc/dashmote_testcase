@@ -44,7 +44,7 @@ def levenshtein_distance_norm(text1: str, text2: str) -> float:
 
 def add_pairwise_features(
     data: DataFrame,
-    inplace: bool = True
+    inplace: bool = False,
 ) -> Optional[DataFrame]:
     '''
     Adds pairwise features to data.
